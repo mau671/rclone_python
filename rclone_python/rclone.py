@@ -678,16 +678,16 @@ def _rclone_transfer_operation(
 
     prog_title = f"{command_descr} [bold magenta]{utils.shorten_filepath(in_path, 20)}[/bold magenta] to [bold magenta]{utils.shorten_filepath(out_path, 20)}"
 
-    # add global rclone flags
-    if ignore_existing:
-        command += " --ignore-existing"
-    command += " --progress"
-
     # in path
     command += f' "{in_path}"'
     # out path
     command += f' "{out_path}"'
-
+    
+    # add global rclone flags
+    if ignore_existing:
+        command += " --ignore-existing"
+    command += " --progress"
+    
     # optional named arguments/flags
     command += utils.args2string(args)
 
