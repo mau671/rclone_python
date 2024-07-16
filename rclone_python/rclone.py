@@ -38,7 +38,8 @@ def is_installed() -> bool:
 
 
 @__check_installed
-def about(remote_name: str):
+def about(remote_name: str,
+          args=None):
     """
     Executes the rclone about command and returns the retrieved json as a dictionary.
     :param remote_name: The name of the remote to examine.
@@ -48,7 +49,12 @@ def about(remote_name: str):
         # if the remote name missed the colon manually add it.
         remote_name += ":"
 
-    process = utils.run_cmd(f"rclone about {remote_name} --json")
+    command = f"rclone about {remote_name} --json"
+
+    if args is not None:
+        command += utils.args2string(args)
+
+    process = utils.run_cmd(command)
 
     if process.returncode == 0:
         return json.loads(process.stdout)
