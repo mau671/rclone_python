@@ -12,6 +12,10 @@ from rclone_python.remote_types import RemoteTypes
 # debug flag enables/disables raw output of rclone progresses in the terminal
 DEBUG = False
 
+if DEBUG is True:
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+else:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 def __check_installed(func):
     @wraps(func)
@@ -127,7 +131,6 @@ def copy(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-    pbar=None,
 ):
     """
     Copies a file or a directory from a src path to a destination path.
@@ -137,7 +140,6 @@ def copy(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
-    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -151,7 +153,6 @@ def copy(
         show_progress=show_progress,
         listener=listener,
         args=args,
-        pbar=pbar,
     )
 
 
@@ -162,7 +163,6 @@ def copyto(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-    pbar=None,
 ):
     """
     Copies a file or a directory from a src path to a destination path and is typically used when renaming a file is necessary.
@@ -172,7 +172,6 @@ def copyto(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
-    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -186,7 +185,6 @@ def copyto(
         show_progress=show_progress,
         listener=listener,
         args=args,
-        pbar=pbar,
     )
 
 
@@ -197,7 +195,6 @@ def move(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-    pbar=None,
 ):
     """
     Moves a file or a directory from a src path to a destination path.
@@ -207,7 +204,6 @@ def move(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
-    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -221,7 +217,6 @@ def move(
         show_progress=show_progress,
         listener=listener,
         args=args,
-        pbar=pbar,
     )
 
 
@@ -232,7 +227,6 @@ def moveto(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-    pbar=None,
 ):
     """
     Moves a file or a directory from a src path to a destination path and is typically used when renaming is necessary.
@@ -242,7 +236,6 @@ def moveto(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
-    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -256,7 +249,6 @@ def moveto(
         show_progress=show_progress,
         listener=listener,
         args=args,
-        pbar=pbar,
     )
 
 
@@ -266,7 +258,6 @@ def sync(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-    pbar=None,
 ):
     """
     Sync the source to the destination, changing the destination only. Doesn't transfer files that are identical on source and destination, testing by size and modification time or MD5SUM.
@@ -275,7 +266,6 @@ def sync(
     :param show_progress: If true, show a progressbar.
     :param listener: An event-listener that is called with every update of rclone.
     :param args: List of additional arguments/ flags.
-    :param pbar: Optional progress bar for integration with custom TUI
     """
     if args is None:
         args = []
@@ -288,7 +278,6 @@ def sync(
         show_progress=show_progress,
         listener=listener,
         args=args,
-        pbar=pbar,
     )
 
 
@@ -346,6 +335,90 @@ def delete(path: str, args=None):
             f'Deleting path "{path}" failed with error message:\n{process.stderr}'
         )
 
+@__check_installed
+def mkdir(path: str, args=None):
+    """
+    Creates a new directory.
+    :param args: List of additional arguments/ flags.
+    :param path: The path of the folder that should be created.
+    """
+    if args is None:
+        args = []
+
+    command = f'rclone mkdir "{path}"'
+    process = utils.run_cmd(command, args)
+
+    if process.returncode == 0:
+        logging.info(f"Successfully created {path}")
+    else:
+        raise Exception(
+            f'Creating path "{path}" failed with error message:\n{process.stderr}'
+        )
+    
+@__check_installed
+def check(
+    src_path: str,
+    dest_path: str,
+    one_way=False,
+    match=None,
+    args=None,
+):
+    """
+    Checks the integrity of the files in the source and destination path.
+    :param src_path: The source path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param dest_path: The destination path to use. Specify the remote with 'remote_name:path_on_remote'
+    :param one_way: If true, only check one way.
+    :param match: If true, only check files that have the same name.
+    :param args: List of additional arguments/ flags.
+    """
+    if args is None:
+        args = []
+
+    command = f"rclone check {src_path} {dest_path}"
+
+    # add optional parameters
+    if one_way:
+        args.append("--one-way")
+    if match is not None:
+        args.append("--match=" + match)
+
+    process = utils.run_cmd(command, args)
+
+    if process.returncode != 0 and process.returncode != 1:
+        raise Exception(process.stderr)
+    else:
+        # Convert the output to a list
+        if match == '-':
+            return process.stdout.splitlines()
+        else:
+            return process.stdout
+
+@__check_installed
+def size(path: str,
+         args=None
+         ) -> Dict[str, Union[int, str]]:
+    """
+    Returns the size of the files in the file list.
+    :param path: The path of the folder that should be examined.
+    :param args: List of additional arguments/ flags.
+    :return: Dictionary with the size and the number of files.
+    """
+    if args is None:
+        args = []
+
+    command = f"rclone size {path} --json"
+
+    print(command, args)
+
+    process = utils.run_cmd(command, args)
+
+    if process.returncode == 0:
+        
+        # return the size and the number of files
+        return json.loads(process.stdout)
+    else:
+        raise Exception(
+            f"An error occurred while executing the size command: {process.stderr}")
 
 @__check_installed
 def link(
@@ -571,13 +644,6 @@ def version(
         return yours, latest, beta
 
 
-class RcloneException(ChildProcessError):
-    def __init__(self, description, error_msg):
-        self.description = description
-        self.error_msg = error_msg
-        super().__init__(f"{description}. Error message: \n{error_msg}")
-
-
 @__check_installed
 def _rclone_transfer_operation(
     in_path: str,
@@ -588,7 +654,6 @@ def _rclone_transfer_operation(
     show_progress=True,
     listener: Callable[[Dict], None] = None,
     args=None,
-    pbar=None,
 ):
     """Executes the rclone transfer operation (e.g. copyto, move, ...) and displays the progress of every individual file.
 
@@ -601,7 +666,6 @@ def _rclone_transfer_operation(
         show_progress (bool, optional): If true, show a progressbar.
         listener (Callable[[Dict], None], optional): An event-listener that is called with every update of rclone.
         args: List of additional arguments/ flags.
-        pbar: a rich.Progress created under a parent live session
     """
     if args is None:
         args = []
@@ -623,19 +687,17 @@ def _rclone_transfer_operation(
 
     # execute the upload command
     process = utils.rclone_progress(
-        command,
-        prog_title,
-        listener=listener,
-        show_progress=show_progress,
-        debug=DEBUG,
-        pbar=pbar,
+        command, prog_title, listener=listener, show_progress=show_progress, debug=DEBUG
     )
 
     if process.wait() == 0:
         logging.info("Cloud upload completed.")
+    elif process.wait() == 8:
+        logging.info("Max transfer reached.")
     else:
         _, err = process.communicate()
-        raise RcloneException(
-            description=f"{command_descr} from {in_path} to {out_path} failed",
-            error_msg=err.decode("utf-8"),
+        
+        raise Exception(
+            f"Copy/Move operation from {in_path} to {out_path}"
+            f' failed with error message:\n{err.decode("utf-8")}'
         )
