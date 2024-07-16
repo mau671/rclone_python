@@ -49,12 +49,12 @@ def about(remote_name: str,
         # if the remote name missed the colon manually add it.
         remote_name += ":"
 
-    command = f"rclone about {remote_name} --json "
+    command = f"rclone about {remote_name} --json"
 
-    if args is not None:
-        command += utils.args2string(args)
+    if args is None:
+        args = []
 
-    process = utils.run_cmd(command)
+    process = utils.run_cmd(command, args)
 
     if process.returncode == 0:
         return json.loads(process.stdout)
