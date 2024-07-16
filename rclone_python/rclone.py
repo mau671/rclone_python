@@ -686,8 +686,8 @@ def _rclone_transfer_operation(
     # add global rclone flags
     if ignore_existing:
         command += " --ignore-existing"
-    command += " --progress"
-    
+    command += " --progress "
+
     # optional named arguments/flags
     command += utils.args2string(args)
 
