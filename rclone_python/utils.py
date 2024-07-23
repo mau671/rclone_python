@@ -12,6 +12,7 @@ from rich.progress import (
     TimeRemainingColumn,
     SpinnerColumn,
     DownloadColumn,
+    TransferSpeedColumn,
 )
 
 # ---------------------------------------------------------------------------- #
@@ -190,6 +191,7 @@ def create_progress_bar() -> Progress:
         BarColumn(),
         TaskProgressColumn(),
         DownloadColumn(binary_units=True),
+        TransferSpeedColumn(),
         TimeRemainingColumn(),
     )
 
